@@ -7,18 +7,52 @@ use std::path::PathBuf;
 use thiserror::Error;
 use url::Url;
 
+/// Result Struct
+#[derive(Hash, Debug, Clone)]
+pub struct UrlResult {
+    /// list of files that this URL appears in
+    pub file_list: Vec<PathBuf>,
+    /// the URL query result
+    pub result: Result<bool, LinkCheckerErrors>,
+}
+
+impl UrlResult {
+    /// constructor
+    pub fn new(f: PathBuf, result: Result<bool, LinkCheckerErrors>) -> Self {
+        Self {
+            file_list: vec![f],
+            result,
+        }
+    }
+    /// adds a file to the file list
+    pub fn add_file(&mut self, f: PathBuf) {
+        self.file_list.push(f)
+    }
+
+    /// returns the error if it exists
+    pub fn error(&self) -> Option<LinkCheckerErrors> {
+        match &self.result {
+            Err(e) => Some(e.clone()),
+            _ => None,
+        }
+    }
+}
 /// custom errors for this crate
-#[derive(Error, Debug)]
-enum LinkCheckerErrors {
+#[derive(Error, Debug, Hash, Clone)]
+pub enum LinkCheckerErrors {
+    /// the URL format is invalid
     #[error("Raise when there is an invalid URL")]
     InvalidUrl,
 
+    /// this computer cannot reach the network
     #[error("Network unavailable.")]
     NetworkUnavailable,
 
+    /// The URL is unreachable
     #[error("URL Unreachable")]
     UrlUnreachable,
 
+    /// I don't know what went wrong
     #[error("Unknown")]
     Unknown,
 }
@@ -28,12 +62,12 @@ pub fn find_files(directory: &PathBuf, respect_gitignore: &bool) -> Vec<PathBuf>
     todo!()
 }
 /// given a string, finds all URLs within it.
-fn find_urls(s: String) -> Result<Vec<Url>, LinkCheckerErrors> {
+pub fn find_urls(s: String) -> Result<Vec<Url>, LinkCheckerErrors> {
     todo!();
 }
 
 /// given a URL, sends it a GET request and then checks if the URL responds with a 200 or not.
-fn validate_url(url: Url) -> Result<bool, LinkCheckerErrors> {
+pub fn validate_url(url: &Url) -> Result<bool, LinkCheckerErrors> {
     todo!()
 }
 
