@@ -2,10 +2,9 @@ use clap::Parser;
 use link_checker::{find_files, find_urls, validate_url, UrlResult};
 use std::collections::HashMap;
 use std::env;
+use std::fs::write;
 use std::path::PathBuf;
-// use std::fs::write;
-// use std::pin::Pin;
-// use std::process::exit;
+use std::process::exit;
 use url::Url;
 
 /// Program to check all files in a directory
@@ -25,7 +24,7 @@ struct Args {
 }
 
 fn main() {
-    let _github_output_path = env::var("GITHUB_OUTPUT");
+    let github_output_path = env::var("GITHUB_OUTPUT");
 
     let args = Args::parse();
     let working_directory = if let Some(d) = args.directory {
@@ -57,21 +56,33 @@ fn main() {
         }
     }
 
+    let mut error = false;
+    let write_to_github = if let Ok(_) = github_output_path {
+        true
+    } else {
+        false
+    };
     for (link, result) in url_results {
         if let Some(e) = result.error() {
-            eprintln!(
+            if !error {
+                error = true;
+                if !write_to_github {
+                    eprintln!("Not writing to github error path since the envar is not set. Running locally perhaps?");
+                }
+            };
+            let err = format!(
                 "Failed to get: `{}`. Error: {e:?}. Appears in {} files",
                 link,
                 result.file_list.len()
             );
+            eprintln!("{err}");
+            if write_to_github {
+                write(github_output_path.clone().unwrap(), format!("error={err}")).unwrap();
+            }
         }
     }
 
-    println!("{working_directory:?}, {respect_gitignore}");
-
-    // if !error.is_empty() {
-    //     eprintln!("Error: {error}");
-    //     write(github_output_path, format!("error={error}")).unwrap();
-    //     exit(1);
-    // }
+    if error {
+        exit(1);
+    }
 }
