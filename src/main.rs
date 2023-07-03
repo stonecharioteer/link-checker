@@ -34,7 +34,7 @@ fn main() {
     };
     let respect_gitignore = args.respect_gitignore;
 
-    let file_list: Vec<PathBuf> = find_files(&working_directory, &respect_gitignore);
+    let file_list: Vec<PathBuf> = find_files(&working_directory, respect_gitignore);
 
     let mut url_results: HashMap<Url, UrlResult> = HashMap::new();
     for file in file_list {
@@ -57,11 +57,7 @@ fn main() {
     }
 
     let mut error = false;
-    let write_to_github = if let Ok(_) = github_output_path {
-        true
-    } else {
-        false
-    };
+    let write_to_github = matches!(github_output_path, Ok(_));
     for (link, result) in url_results {
         if let Some(e) = result.error() {
             if !error {

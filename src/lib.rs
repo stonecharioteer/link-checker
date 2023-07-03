@@ -2,10 +2,14 @@
 //! and checks if these URLs are working.
 #![allow(unused)]
 #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
-use std::path::PathBuf;
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use thiserror::Error;
 use url::Url;
+use walkdir::WalkDir;
 
 /// Result Struct
 #[derive(Hash, Debug, Clone)]
@@ -58,8 +62,32 @@ pub enum LinkCheckerErrors {
 }
 
 /// Given a directory, returns all files within it.
-pub fn find_files(directory: &PathBuf, respect_gitignore: &bool) -> Vec<PathBuf> {
-    todo!()
+pub fn find_files(directory: &Path, respect_gitignore: bool) -> Vec<PathBuf> {
+    let mut file_list: Vec<PathBuf> = WalkDir::new(directory)
+        .into_iter()
+        .map(|x| x.unwrap().path().to_owned())
+        .collect();
+    if respect_gitignore {
+        // NOTE: Only supporting root-level .gitignore files now.
+        let gitignore_file = Path::new("/.gitignore");
+        let gitignore: Option<String> = if gitignore_file.is_file() {
+            Some(fs::read_to_string(gitignore_file).unwrap())
+        } else {
+            // WARN about no gitignore.
+            None
+        };
+
+        match gitignore {
+            Some(gitignore_rules) => {
+                let rules = gitignore_rules.lines();
+                todo!()
+            }
+            None => todo!("warn about no gitignore"),
+        };
+    };
+    // remove directories from this.
+    file_list = file_list.into_iter().filter(|x| x.is_file()).collect();
+    file_list
 }
 /// given a string, finds all URLs within it.
 pub fn find_urls(s: String) -> Result<Vec<Url>, LinkCheckerErrors> {
@@ -73,6 +101,16 @@ pub fn validate_url(url: &Url) -> Result<bool, LinkCheckerErrors> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use std::path::Path;
+
+    /// tests that given a folder path, the `find_files` function
+    /// can retrieve all the files in it.
+    #[test]
+    fn test_find_files() {
+        let dir = Path::new("./");
+        find_files(dir, false);
+    }
 
     /// tests that given a string containing a URL among other things, the `get_url` function
     /// can construct a URL from it.
