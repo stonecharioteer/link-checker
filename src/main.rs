@@ -1,3 +1,4 @@
+#![allow(unused)]
 use clap::Parser;
 use link_checker::{find_files, find_urls, validate_url, UrlResult};
 use std::collections::HashMap;
@@ -5,7 +6,10 @@ use std::env;
 use std::fs::write;
 use std::path::PathBuf;
 use std::process::exit;
+use tracing_subscriber::EnvFilter;
 use url::Url;
+
+use tracing::{debug, info, trace, warn};
 
 /// Program to check all files in a directory
 /// for unreachable URLs.
@@ -24,7 +28,12 @@ struct Args {
 }
 
 fn main() {
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_env("LINK_CHECKER_LOG"))
+        .init();
+
     let github_output_path = env::var("GITHUB_OUTPUT");
+    debug!(?github_output_path);
 
     let args = Args::parse();
     let working_directory = if let Some(d) = args.directory {
@@ -33,8 +42,11 @@ fn main() {
         env::current_dir().unwrap()
     };
     let respect_gitignore = args.respect_gitignore;
+    debug!(?working_directory);
+    debug!(respect_gitignore);
 
     let file_list: Vec<PathBuf> = find_files(&working_directory, respect_gitignore);
+    debug!("Files found: {}", file_list.len());
 
     let mut url_results: HashMap<Url, UrlResult> = HashMap::new();
     for file in file_list {
